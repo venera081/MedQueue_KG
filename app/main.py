@@ -4,6 +4,12 @@ from app.db.base import Base
 from app.db.session import engine
 from app.api.v1.clinics import router as clinics_router
 
+from app.models.clinic import Clinic
+from app.models.user import User
+from app.models.profile import DoctorProfile, PatientProfile
+from app.models.specialization import Specialization
+from app.models.schedule import DoctorSchedule
+
 app = FastAPI(
     title="MedQueue KG",
     description="API для записи пациентов в клиники Кыргызстана",
