@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.profile import DoctorProfile, PatientProfile
 from app.models.specialization import Specialization
 from app.models.schedule import DoctorSchedule
+from app.api.v1.auth import router as auth_router
 
 app = FastAPI(
     title="MedQueue KG",
@@ -19,6 +20,7 @@ app = FastAPI(
 Base.metadata.create_all(bind=engine)
 
 app.include_router(clinics_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
 
 
 @app.get("/")
