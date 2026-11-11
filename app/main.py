@@ -13,6 +13,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.clinics import router as clinics_router
 from app.api.v1.specializations import router as specializations_router
 from app.api.v1.doctors import router as doctors_router
+from app.api.v1.schedules import router as schedules_router
 
 
 app = FastAPI(
@@ -27,6 +28,7 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(clinics_router, prefix="/api/v1")
 app.include_router(specializations_router, prefix="/api/v1")
 app.include_router(doctors_router, prefix="/api/v1")
+app.include_router(schedules_router, prefix="/api/v1")
 
 
 @app.get("/")
