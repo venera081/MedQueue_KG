@@ -3,18 +3,19 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.models.enums import UserRole
+from app.models.profile import PatientProfile
 from app.core.security import hash_password
 from app.schemas.user import UserRegister
 
 
 def create_user(
-        db: Session,
-        email: str,
-        hashed_password: str,
-        first_name: str,
-        last_name: str,
-        phone: str,
-        role: UserRole = UserRole.PATIENT,
+    db: Session,
+    email: str,
+    hashed_password: str,
+    first_name: str,
+    last_name: str,
+    phone: str,
+    role: UserRole = UserRole.PATIENT,
 ) -> User:
 
     user = User(
@@ -37,9 +38,11 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
     statement = select(User).where(User.id == user_id)
     return db.scalars(statement).first()
 
+
 def get_user_by_email(db: Session, email: str) -> User | None:
     statement = select(User).where(User.email == email)
     return db.scalars(statement).first()
+
 
 def get_users(db: Session) -> list[User]:
     statement = select(User)
@@ -96,8 +99,7 @@ def register_user(db: Session, user_data: UserRegister) -> User:
 
     hashed_password = hash_password(user_data.password)
 
-    return create_user(
-        db=db,
+    user = User(
         email=user_data.email,
         hashed_password=hashed_password,
         first_name=user_data.first_name,
@@ -105,3 +107,17 @@ def register_user(db: Session, user_data: UserRegister) -> User:
         phone=user_data.phone,
         role=UserRole.PATIENT,
     )
+
+    patient_profile = PatientProfile(user=user)
+
+    try:
+        db.add(user)
+        db.add(patient_profile)
+        db.commit()
+        db.refresh(user)
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return user
