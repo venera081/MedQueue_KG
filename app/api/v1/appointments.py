@@ -10,15 +10,28 @@ from app.models.appointment import Appointment
 from app.models.enums import UserRole
 from app.schemas.appointment import (
     AppointmentCreate,
+    AppointmentUpdate,
     AppointmentResponse,
 )
-from app.services.appointments import create_appointment
+from app.services.appointments import (
+    create_appointment,
+    update_appointment,
+    cancel_appointment,
+)
 
 
 router = APIRouter(
     prefix="/appointments",
     tags=["Appointments"],
 )
+
+
+def check_patient_role(current_user: User):
+    if current_user.role != UserRole.PATIENT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only patients can manage appointments",
+        )
 
 
 @router.post(
@@ -31,17 +44,19 @@ def book_appointment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role != UserRole.PATIENT:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only patients can book appointments",
-        )
+    check_patient_role(current_user)
 
     try:
         return create_appointment(
             db=db,
             current_user=current_user,
             appointment_data=appointment_data,
+        )
+
+    except LookupError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
         )
 
     except ValueError as error:
@@ -59,11 +74,7 @@ def get_my_appointments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role != UserRole.PATIENT:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only patients can view their appointments",
-        )
+    check_patient_role(current_user)
 
     patient_statement = select(PatientProfile).where(
         PatientProfile.user_id == current_user.id
@@ -86,3 +97,67 @@ def get_my_appointments(
     )
 
     return list(db.scalars(statement).all())
+
+
+@router.patch(
+    "/{appointment_id}",
+    response_model=AppointmentResponse,
+)
+def edit_appointment(
+    appointment_id: int,
+    appointment_data: AppointmentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    check_patient_role(current_user)
+
+    try:
+        return update_appointment(
+            db=db,
+            current_user=current_user,
+            appointment_id=appointment_id,
+            appointment_data=appointment_data,
+        )
+
+    except LookupError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        )
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(error),
+        )
+
+
+@router.patch(
+    "/{appointment_id}/cancel",
+    response_model=AppointmentResponse,
+)
+def cancel_patient_appointment(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    check_patient_role(current_user)
+
+    try:
+        return cancel_appointment(
+            db=db,
+            current_user=current_user,
+            appointment_id=appointment_id,
+        )
+
+    except LookupError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        )
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(error),
+        )
