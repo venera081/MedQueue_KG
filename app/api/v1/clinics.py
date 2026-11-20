@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import require_roles
 from app.db.session import get_db
+from app.models.enums import UserRole
+from app.models.user import User
 from app.schemas.clinic import ClinicCreate, ClinicResponse
 from app.services.clinic import (
     create_clinic,
@@ -25,6 +28,7 @@ router = APIRouter(
 def create_clinic_endpoint(
     clinic_data: ClinicCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     return create_clinic(db, clinic_data)
 
@@ -66,6 +70,7 @@ def update_clinic_endpoint(
     clinic_id: int,
     clinic_data: ClinicCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     clinic = update_clinic(db, clinic_id, clinic_data)
 
@@ -85,6 +90,7 @@ def update_clinic_endpoint(
 def delete_clinic_endpoint(
     clinic_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     deleted = delete_clinic(db, clinic_id)
 

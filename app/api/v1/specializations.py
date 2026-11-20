@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import require_roles
 from app.db.session import get_db
+from app.models.enums import UserRole
+from app.models.user import User
 from app.schemas.specialization import (
     SpecializationCreate,
     SpecializationResponse,
@@ -29,6 +32,7 @@ router = APIRouter(
 def create_specialization_endpoint(
     specialization_data: SpecializationCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     try:
         return create_specialization(db, specialization_data)
@@ -76,6 +80,7 @@ def update_specialization_endpoint(
     specialization_id: int,
     specialization_data: SpecializationCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     try:
         specialization = update_specialization(
@@ -105,6 +110,7 @@ def update_specialization_endpoint(
 def delete_specialization_endpoint(
     specialization_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     deleted = delete_specialization(db, specialization_id)
 

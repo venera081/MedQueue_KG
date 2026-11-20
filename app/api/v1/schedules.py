@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import require_roles
 from app.db.session import get_db
+from app.models.enums import UserRole
+from app.models.user import User
 
 from app.schemas.schedule import (
     ScheduleCreate,
@@ -32,6 +35,7 @@ router = APIRouter(
 def create_schedule_endpoint(
     schedule_data: ScheduleCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     schedule, error = create_schedule(db, schedule_data)
 
@@ -87,6 +91,7 @@ def update_schedule_endpoint(
     schedule_id: int,
     schedule_data: ScheduleUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     schedule, error = update_schedule(
         db,
@@ -116,6 +121,7 @@ def update_schedule_endpoint(
 def delete_schedule_endpoint(
     schedule_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     deleted = delete_schedule(db, schedule_id)
 
