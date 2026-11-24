@@ -2,7 +2,20 @@ from pydantic import BaseModel, ConfigDict
 
 from app.schemas.clinic import ClinicResponse
 from app.schemas.specialization import SpecializationResponse
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+
+class DoctorAccountCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+    first_name: str
+    last_name: str
+    phone: str
+
+    clinic_id: int
+    specialization_id: int
+    experience_years: int = Field(default=0, ge=0)
+    description: str | None = None
 
 class DoctorCreate(BaseModel):
     user_id: int

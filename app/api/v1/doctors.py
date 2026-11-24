@@ -7,12 +7,14 @@ from app.models.enums import UserRole
 from app.models.user import User
 
 from app.schemas.doctor import (
+    DoctorAccountCreate,
     DoctorCreate,
     DoctorUpdate,
     DoctorResponse,
 )
 
 from app.services.doctor import (
+    create_doctor_account,
     create_doctor,
     get_doctors,
     get_doctor_by_id,
@@ -25,6 +27,38 @@ router = APIRouter(
     prefix="/doctors",
     tags=["Doctors"],
 )
+
+@router.post(
+    "/accounts",
+    response_model=DoctorResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_doctor_account_endpoint(
+    doctor_data: DoctorAccountCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    doctor, error = create_doctor_account(db, doctor_data)
+
+    if error == "email_exists":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this email already exists",
+        )
+
+    if error == "clinic_not_found":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Clinic not found",
+        )
+
+    if error == "specialization_not_found":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Specialization not found",
+        )
+
+    return doctor
 
 
 @router.post(

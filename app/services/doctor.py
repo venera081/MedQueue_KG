@@ -8,6 +8,8 @@ from app.models.specialization import Specialization
 from app.models.enums import UserRole
 
 from app.schemas.doctor import DoctorCreate, DoctorUpdate
+from app.core.security import hash_password
+from app.schemas.doctor import DoctorAccountCreate
 
 
 def get_doctor_by_id(
@@ -130,3 +132,60 @@ def delete_doctor(db: Session, doctor_id: int) -> bool:
     db.commit()
 
     return True
+
+
+def create_doctor_account(
+    db: Session,
+    doctor_data: DoctorAccountCreate,
+) -> tuple[DoctorProfile | None, str | None]:
+
+    existing_user = db.scalars(
+        select(User).where(User.email == doctor_data.email)
+    ).first()
+
+    if existing_user:
+        return None, "email_exists"
+
+    clinic = db.get(Clinic, doctor_data.clinic_id)
+
+    if clinic is None:
+        return None, "clinic_not_found"
+
+    specialization = db.get(
+        Specialization,
+        doctor_data.specialization_id,
+    )
+
+    if specialization is None:
+        return None, "specialization_not_found"
+
+    hashed_password = hash_password(doctor_data.password)
+
+    user = User(
+        email=doctor_data.email,
+        hashed_password=hashed_password,
+        first_name=doctor_data.first_name,
+        last_name=doctor_data.last_name,
+        phone=doctor_data.phone,
+        role=UserRole.DOCTOR,
+    )
+
+    doctor = DoctorProfile(
+        user=user,
+        clinic_id=doctor_data.clinic_id,
+        specialization_id=doctor_data.specialization_id,
+        experience_years=doctor_data.experience_years,
+        description=doctor_data.description,
+    )
+
+    try:
+        db.add(user)
+        db.add(doctor)
+        db.commit()
+        db.refresh(doctor)
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return get_doctor_by_id(db, doctor.id), None
