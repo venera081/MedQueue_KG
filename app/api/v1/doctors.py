@@ -18,6 +18,7 @@ from app.services.doctor import (
     create_doctor,
     get_doctors,
     get_doctor_by_id,
+    get_doctor_by_user_id,
     update_doctor,
     delete_doctor,
 )
@@ -120,6 +121,24 @@ def get_doctors_endpoint(
     db: Session = Depends(get_db),
 ):
     return get_doctors(db)
+
+@router.get(
+    "/me",
+    response_model=DoctorResponse,
+)
+def get_my_doctor_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.DOCTOR)),
+):
+    doctor = get_doctor_by_user_id(db, current_user.id)
+
+    if doctor is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Doctor profile not found",
+        )
+
+    return doctor
 
 
 @router.get(

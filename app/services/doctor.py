@@ -189,3 +189,19 @@ def create_doctor_account(
         raise
 
     return get_doctor_by_id(db, doctor.id), None
+
+def get_doctor_by_user_id(
+    db: Session,
+    user_id: int,
+) -> DoctorProfile | None:
+    statement = (
+        select(DoctorProfile)
+        .options(
+            selectinload(DoctorProfile.user),
+            selectinload(DoctorProfile.clinic),
+            selectinload(DoctorProfile.specialization),
+        )
+        .where(DoctorProfile.user_id == user_id)
+    )
+
+    return db.scalars(statement).first()
